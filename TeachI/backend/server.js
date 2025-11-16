@@ -18,7 +18,7 @@ app.use(express.json());
 // Нағыз MongoDB қос
 async function startServer() {
   try {
-    const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/edu_manage';
+    const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://240118001_db_user:Qc7mds8iRHBwhxly@teachi.6bvwzai.mongodb.net/teachi?retryWrites=true&w=majority';
     
     console.log('🔧 Connecting to MongoDB...');
     await mongoose.connect(MONGODB_URI);
