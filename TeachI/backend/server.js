@@ -5,8 +5,14 @@ const mongoose = require('mongoose');
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Нақты CORS баптау
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 // Нағыз MongoDB қос
@@ -21,19 +27,19 @@ async function startServer() {
     // Routes
     app.use('/api/auth', require('./routes/auth'));
     app.use('/api/users', require('./routes/users'));
-    // ... басқа route-тар
-    
+    app.use('/api/courses', require('./routes/courses'));
+    app.use('/api/enrollments', require('./routes/enrollments'));
     app.get('/', (req, res) => {
       res.send(`
         <h1>🎓 TeachI</h1>
         <p>Сервер жұмыс істеп тұр! Деректер тұрақты сақталады.</p>
-        <a href="/api/auth/register">Тіркелу</a>
       `);
     });
     
-    const PORT = process.env.PORT || 5000;
+    const PORT = process.env.PORT || 3001; // ⬅️ 3001 порты
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(`✅ CORS enabled for: http://localhost:3000`);
     });
     
   } catch (error) {

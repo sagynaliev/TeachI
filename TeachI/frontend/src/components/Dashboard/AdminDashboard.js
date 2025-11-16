@@ -69,9 +69,9 @@ const AdminDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-lg p-6 text-white">
+      <div className="bg-gradient-to-r from-green-600 to-green-800 rounded-lg p-6 text-white">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <p className="mt-2 text-purple-100">
+        <p className="mt-2 text-green-100">
           Monitor system performance, manage users, and oversee all platform activities.
         </p>
       </div>
