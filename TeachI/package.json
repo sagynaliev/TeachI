@@ -4,11 +4,14 @@
   "description": "Full-stack Course Management System with MERN stack",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "start": "cd backend && npm start",
     "server": "cd backend && npm run dev",
     "client": "cd frontend && npm start",
     "install-server": "cd backend && npm install",
     "install-client": "cd frontend && npm install",
-    "install-all": "npm run install-server && npm run install-client"
+    "install-all": "npm run install-server && npm install-client",
+    "build": "cd frontend && npm run build",
+    "render-build": "npm run install-all && npm run build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
