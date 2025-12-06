@@ -7,7 +7,10 @@ import { Toaster } from 'react-hot-toast';
 import axios from 'axios';
 
 // Set default axios baseURL
-axios.defaults.baseURL = 'http://localhost:3001';
+axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'https://teachi-3.onrender.com';
+
+// CORS credentials қосу
+axios.defaults.withCredentials = true;
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
