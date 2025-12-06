@@ -17,7 +17,7 @@ app.use(express.json());
 async function startServer() {
   try {
     // ✅ НАҚТЫ ПАРОЛЬ!
-    const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://240118001_db_user:Alikhan2007@teachi.6bvwzai.mongodb.net/?appName=TeachI';
+    const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://240118001_db_user:Alikhan2007@teachi.6bvwzai.mongodb.net/?appName=TeachI&authSource=admin';
     
     console.log('🔧 Connecting to MongoDB...');
     
