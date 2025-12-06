@@ -7,8 +7,8 @@ services:
     buildCommand: npm install
     startCommand: node server.js
     envVars:
-      - key: MONGODB_URI
-        value: mongodb+srv://240118001_db_user:Alikhan2007@teachi.6bvwzai.mongodb.net/?retryWrites=true&w=majority&appName=TeachI
+  - key: MONGODB_URI
+    value: mongodb+srv://teachi_render:Render2024@teachi.6bvwzai.mongodb.net/?retryWrites=true&w=majority&appName=TeachI
       - key: NODE_ENV
         value: production
 EOF
