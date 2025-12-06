@@ -1,22 +1,14 @@
 cat > render.yaml << 'EOF'
 services:
   - type: web
-    name: teachi-backend
+    name: teachi-3
     env: node
-    rootDirectory: backend
+    rootDirectory: TeachI/backend
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: node server.js
     envVars:
       - key: MONGODB_URI
-        sync: false
-      - key: JWT_SECRET
-        generateValue: true
-      - key: PORT
-        value: 3000
+        value: mongodb+srv://240118001_db_user:Alikhan2007@teachi.6bvwzai.mongodb.net/?retryWrites=true&w=majority&appName=TeachI
       - key: NODE_ENV
         value: production
-      - key: EMAIL_USER
-        sync: false
-      - key: EMAIL_PASS
-        sync: false
 EOF
