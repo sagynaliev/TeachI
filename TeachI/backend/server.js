@@ -5,23 +5,27 @@ const mongoose = require('mongoose');
 
 const app = express();
 
-// Нақты CORS баптау
+// Ең қарапайым CORS
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: '*',
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
 
 app.use(express.json());
 
-// Нағыз MongoDB қос
 async function startServer() {
   try {
-    const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://240118001_db_user:<db_password>@teachi.6bvwzai.mongodb.net/?appName=TeachI';
+    const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://240118001_db_user:Alikhan2007@teachi.6bvwzai.mongodb.net/teachi?retryWrites=true&w=majority';
     
     console.log('🔧 Connecting to MongoDB...');
-    await mongoose.connect(MONGODB_URI);
+    console.log('MongoDB URI:', MONGODB_URI ? 'Exists' : 'Missing');
+    
+    await mongoose.connect(MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
+    
     console.log('✅ Connected to MongoDB');
     
     // Routes
@@ -29,21 +33,22 @@ async function startServer() {
     app.use('/api/users', require('./routes/users'));
     app.use('/api/courses', require('./routes/courses'));
     app.use('/api/enrollments', require('./routes/enrollments'));
-    app.get('/', (req, res) => {
-      res.send(`
-        <h1>🎓 TeachI</h1>
-        <p>Сервер жұмыс істеп тұр! Деректер тұрақты сақталады.</p>
-      `);
+    
+    app.get('/health', (req, res) => {
+      res.json({ 
+        status: 'healthy',
+        database: 'connected',
+        cors: 'enabled'
+      });
     });
     
-    const PORT = process.env.PORT || 3001; // ⬅️ 3001 порты
+    const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`✅ CORS enabled for: http://localhost:3000`);
+      console.log(`🚀 Server running on port ${PORT}`);
     });
     
   } catch (error) {
-    console.error('❌ MongoDB connection error:', error);
+    console.error('❌ Startup error:', error.message);
     process.exit(1);
   }
 }
