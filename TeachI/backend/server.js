@@ -5,27 +5,23 @@ const mongoose = require('mongoose');
 
 const app = express();
 
-// Ең қарапайым CORS
+// Нақты CORS баптау
 app.use(cors({
-  origin: '*',
+  origin: 'http://localhost:3000',
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
 
+// Нағыз MongoDB қос
 async function startServer() {
   try {
-    const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://240118001_db_user:Alikhan2007@teachi.6bvwzai.mongodb.net/teachi?retryWrites=true&w=majority';
+    const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/edu_manage';
     
     console.log('🔧 Connecting to MongoDB...');
-    console.log('MongoDB URI:', MONGODB_URI ? 'Exists' : 'Missing');
-    
-    await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
-    
+    await mongoose.connect(MONGODB_URI);
     console.log('✅ Connected to MongoDB');
     
     // Routes
@@ -33,22 +29,25 @@ async function startServer() {
     app.use('/api/users', require('./routes/users'));
     app.use('/api/courses', require('./routes/courses'));
     app.use('/api/enrollments', require('./routes/enrollments'));
-    
-    app.get('/health', (req, res) => {
-      res.json({ 
-        status: 'healthy',
-        database: 'connected',
-        cors: 'enabled'
-      });
+    app.use('/api/analytics', require('./routes/analytics')); 
+    app.use('/api/notifications', require('./routes/notifications'));
+    app.use('/api/messages', require('./routes/messages'));
+    app.use('/api/attendance', require('./routes/attendance'));
+    app.get('/', (req, res) => {
+      res.send(`
+        <h1>🎓 TeachI</h1>
+        <p>Сервер жұмыс істеп тұр! Деректер тұрақты сақталады.</p>
+      `);
     });
     
-    const PORT = process.env.PORT || 3000;
+    const PORT = process.env.PORT || 3001; // ⬅️ 3001 порты
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(`✅ CORS enabled for: http://localhost:${PORT}`);
     });
     
   } catch (error) {
-    console.error('❌ Startup error:', error.message);
+    console.error('❌ MongoDB connection error:', error);
     process.exit(1);
   }
 }
