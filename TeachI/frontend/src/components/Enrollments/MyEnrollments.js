@@ -22,10 +22,54 @@ const MyEnrollments = () => {
 
   const fetchEnrollments = async () => {
     try {
+      setLoading(true);
       const response = await axios.get(`/api/enrollments/student/${user._id}`);
-      setEnrollments(response.data);
+      
+      // ====== API RESPONSE ҚҰРЫЛЫМЫН ТЕКСЕРУ ЖӘНЕ ТАЗАРТУ ======
+      console.log('API Response:', response.data);
+      
+      let enrollmentsData = [];
+      
+      // Әр түрлі response құрылымдары
+      if (Array.isArray(response.data)) {
+        enrollmentsData = response.data;
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        enrollmentsData = response.data.data;
+      } else if (response.data?.enrollments && Array.isArray(response.data.enrollments)) {
+        enrollmentsData = response.data.enrollments;
+      }
+      
+      // Null/undefined элементтерді алып тастау және course объектісін тексеру
+      const cleanEnrollments = enrollmentsData
+        .filter(enrollment => enrollment && enrollment._id)
+        .map(enrollment => ({
+          ...enrollment,
+          // Егер course null болса, default объект құру
+          course: enrollment.course || {
+            _id: 'unknown',
+            title: 'Unknown Course',
+            courseCode: 'N/A',
+            credits: 0,
+            description: 'No description available',
+            instructor: { firstName: 'Unknown', lastName: 'Instructor' }
+          },
+          // Егер attendance null болса
+          attendance: enrollment.attendance || {
+            attendancePercentage: 0,
+            totalClasses: 0,
+            attendedClasses: 0
+          },
+          // Егер finalGrade null болса
+          finalGrade: enrollment.finalGrade || {
+            letterGrade: 'N/A',
+            percentage: 0
+          }
+        }));
+      
+      setEnrollments(cleanEnrollments);
     } catch (error) {
       console.error('Error fetching enrollments:', error);
+      setEnrollments([]); // Қате кезінде бос массив
     } finally {
       setLoading(false);
     }
@@ -55,6 +99,11 @@ const MyEnrollments = () => {
     return 'text-red-600';
   };
 
+  // ====== SAFE ENROLLMENTS - NULL CHECK ======
+  const safeEnrollments = enrollments.filter(
+    enrollment => enrollment && enrollment.course && enrollment.course._id
+  );
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -76,7 +125,7 @@ const MyEnrollments = () => {
             <BookOpenIcon className="h-8 w-8 text-blue-500" />
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Courses</p>
-              <p className="text-2xl font-semibold text-gray-900">{enrollments.length}</p>
+              <p className="text-2xl font-semibold text-gray-900">{safeEnrollments.length}</p>
             </div>
           </div>
         </div>
@@ -87,7 +136,7 @@ const MyEnrollments = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Active</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {enrollments.filter(e => e.status === 'enrolled').length}
+                {safeEnrollments.filter(e => e.status === 'enrolled').length}
               </p>
             </div>
           </div>
@@ -99,7 +148,7 @@ const MyEnrollments = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Completed</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {enrollments.filter(e => e.status === 'completed').length}
+                {safeEnrollments.filter(e => e.status === 'completed').length}
               </p>
             </div>
           </div>
@@ -111,8 +160,8 @@ const MyEnrollments = () => {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Avg Attendance</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {enrollments.length > 0 
-                  ? Math.round(enrollments.reduce((sum, e) => sum + (e.attendance?.attendancePercentage || 0), 0) / enrollments.length)
+                {safeEnrollments.length > 0 
+                  ? Math.round(safeEnrollments.reduce((sum, e) => sum + (e.attendance?.attendancePercentage || 0), 0) / safeEnrollments.length)
                   : 0}%
               </p>
             </div>
@@ -121,7 +170,7 @@ const MyEnrollments = () => {
       </div>
 
       {/* Course List */}
-      {enrollments.length === 0 ? (
+      {safeEnrollments.length === 0 ? (
         <div className="text-center py-12">
           <BookOpenIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No courses enrolled</h3>
@@ -132,28 +181,34 @@ const MyEnrollments = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {enrollments.map((enrollment) => (
+          {safeEnrollments.map((enrollment) => (
             <div key={enrollment._id} className="card hover:shadow-md transition-shadow">
               {/* Status Badge */}
               <div className="flex justify-between items-start mb-4">
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(enrollment.status)}`}>
-                  {enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1)}
+                  {enrollment.status?.charAt(0).toUpperCase() + enrollment.status?.slice(1) || 'Unknown'}
                 </span>
+                {/* ====== CREDITS CHECK ====== */}
                 <span className="text-sm text-gray-500">
-                  {enrollment.course.credits} credits
+                  {enrollment.course?.credits || 0} credits
                 </span>
               </div>
 
               {/* Course Info */}
               <div className="mb-4">
+                {/* ====== TITLE CHECK ====== */}
                 <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  {enrollment.course.title}
+                  {enrollment.course?.title || 'Unknown Course'}
                 </h3>
-                <p className="text-sm text-gray-600 mb-2">{enrollment.course.courseCode}</p>
+                {/* ====== COURSE CODE CHECK ====== */}
+                <p className="text-sm text-gray-600 mb-2">
+                  {enrollment.course?.courseCode || 'N/A'}
+                </p>
                 
+                {/* ====== INSTRUCTOR CHECK ====== */}
                 <div className="flex items-center text-sm text-gray-600">
                   <UserIcon className="h-4 w-4 mr-1" />
-                  {enrollment.course.instructor?.firstName} {enrollment.course.instructor?.lastName}
+                  {enrollment.course?.instructor?.firstName || 'Unknown'} {enrollment.course?.instructor?.lastName || 'Instructor'}
                 </div>
               </div>
 
@@ -163,35 +218,41 @@ const MyEnrollments = () => {
                 <div>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-600">Attendance</span>
+                    {/* ====== ATTENDANCE CHECK ====== */}
                     <span className="font-medium">
-                      {enrollment.attendance.attendancePercentage.toFixed(1)}%
+                      {enrollment.attendance?.attendancePercentage?.toFixed(1) || '0.0'}%
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
                       className="bg-blue-500 h-2 rounded-full"
-                      style={{ width: `${enrollment.attendance.attendancePercentage}%` }}
+                      style={{ 
+                        width: `${enrollment.attendance?.attendancePercentage || 0}%` 
+                      }}
                     ></div>
                   </div>
                 </div>
 
                 {/* Grade */}
-                {enrollment.finalGrade?.percentage !== undefined && (
+                {/* ====== FINAL GRADE CHECK ====== */}
+                {enrollment.finalGrade?.percentage !== undefined && enrollment.finalGrade?.percentage !== 0 && (
                   <div>
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-gray-600">Current Grade</span>
                       <span className={`font-medium ${getGradeColor(enrollment.finalGrade)}`}>
-                        {enrollment.finalGrade.letterGrade} ({enrollment.finalGrade.percentage}%)
+                        {enrollment.finalGrade.letterGrade || 'N/A'} ({enrollment.finalGrade.percentage || 0}%)
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 
                         className={`h-2 rounded-full ${
-                          enrollment.finalGrade.percentage >= 90 ? 'bg-green-500' :
-                          enrollment.finalGrade.percentage >= 80 ? 'bg-blue-500' :
-                          enrollment.finalGrade.percentage >= 70 ? 'bg-yellow-500' : 'bg-red-500'
+                          (enrollment.finalGrade.percentage || 0) >= 90 ? 'bg-green-500' :
+                          (enrollment.finalGrade.percentage || 0) >= 80 ? 'bg-blue-500' :
+                          (enrollment.finalGrade.percentage || 0) >= 70 ? 'bg-yellow-500' : 'bg-red-500'
                         }`}
-                        style={{ width: `${enrollment.finalGrade.percentage}%` }}
+                        style={{ 
+                          width: `${enrollment.finalGrade.percentage || 0}%` 
+                        }}
                       ></div>
                     </div>
                   </div>
@@ -200,18 +261,38 @@ const MyEnrollments = () => {
 
               {/* Action Buttons */}
               <div className="flex space-x-2">
-                <Link
-                  to={`/courses/${enrollment.course._id}`}
-                  className="flex-1 btn btn-secondary text-center"
-                >
-                  View Course
-                </Link>
-                <Link
-                  to={`/assignments?course=${enrollment.course._id}`}
-                  className="flex-1 btn btn-primary text-center"
-                >
-                  Assignments
-                </Link>
+                {/* ====== COURSE ID CHECK ====== */}
+                {enrollment.course?._id && enrollment.course._id !== 'unknown' ? (
+                  <Link
+                    to={`/courses/${enrollment.course._id}`}
+                    className="flex-1 btn btn-secondary text-center"
+                  >
+                    View Course
+                  </Link>
+                ) : (
+                  <button
+                    disabled
+                    className="flex-1 btn btn-secondary text-center opacity-50 cursor-not-allowed"
+                  >
+                    View Course
+                  </button>
+                )}
+                
+                {enrollment.course?._id && enrollment.course._id !== 'unknown' ? (
+                  <Link
+                    to={`/assignments?course=${enrollment.course._id}`}
+                    className="flex-1 btn btn-primary text-center"
+                  >
+                    Assignments
+                  </Link>
+                ) : (
+                  <button
+                    disabled
+                    className="flex-1 btn btn-primary text-center opacity-50 cursor-not-allowed"
+                  >
+                    Assignments
+                  </button>
+                )}
               </div>
             </div>
           ))}
