@@ -44,9 +44,37 @@ const AssignmentList = () => {
       }
 
       const response = await axios.get(url);
-      setAssignments(response.data);
+      
+      // ====== ТҮЗЕТУ БОЛЫП ТАБЫЛАДЫ ======
+      // API response құрылымын тексеру
+      console.log('API Response:', response.data);
+      
+      // Әр түрлі response құрылымдары үшін
+      let assignmentsData = [];
+      
+      if (Array.isArray(response.data)) {
+        // Егер response тікелей массив болса
+        assignmentsData = response.data;
+      } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        // Егер response объект болса және data массиві бар болса
+        assignmentsData = response.data.data;
+      } else if (response.data && Array.isArray(response.data.assignments)) {
+        // Егер response объект болса және assignments массиві бар болса
+        assignmentsData = response.data.assignments;
+      } else if (response.data && typeof response.data === 'object') {
+        // Егер бір объект болса, оны массивке айналдыру
+        assignmentsData = [response.data];
+      }
+      
+      // Null/undefined элементтерді тазарту
+      const cleanAssignments = assignmentsData.filter(
+        assignment => assignment && assignment._id && typeof assignment === 'object'
+      );
+      
+      setAssignments(cleanAssignments);
     } catch (error) {
       console.error('Error fetching assignments:', error);
+      setAssignments([]); // Қате кезінде бос массив қою
     } finally {
       setLoading(false);
     }
@@ -55,18 +83,30 @@ const AssignmentList = () => {
   const fetchEnrolledCourses = async () => {
     try {
       const response = await axios.get(`/api/enrollments/student/${user._id}`);
-      setCourses(response.data.map(enrollment => enrollment.course));
+      // Response құрылымын тексеру
+      const coursesData = response.data?.data || response.data || [];
+      const cleanCourses = Array.isArray(coursesData) 
+        ? coursesData.map(enrollment => enrollment.course).filter(course => course && course._id)
+        : [];
+      setCourses(cleanCourses);
     } catch (error) {
       console.error('Error fetching courses:', error);
+      setCourses([]);
     }
   };
 
   const fetchInstructorCourses = async () => {
     try {
       const response = await axios.get(`/api/courses/instructor/${user._id}`);
-      setCourses(response.data);
+      // Response құрылымын тексеру
+      const coursesData = response.data?.data || response.data || [];
+      const cleanCourses = Array.isArray(coursesData) 
+        ? coursesData.filter(course => course && course._id)
+        : [];
+      setCourses(cleanCourses);
     } catch (error) {
       console.error('Error fetching courses:', error);
+      setCourses([]);
     }
   };
 
@@ -100,7 +140,11 @@ const AssignmentList = () => {
   };
 
   const getStatusText = (assignment) => {
+    if (!assignment.dueDate) return 'No Due Date';
+    
     const dueDate = new Date(assignment.dueDate);
+    if (isNaN(dueDate.getTime())) return 'Invalid Date';
+    
     const now = new Date();
     
     if (assignment.isSubmitted) {
@@ -113,7 +157,11 @@ const AssignmentList = () => {
   };
 
   const getStatusColor = (assignment) => {
+    if (!assignment.dueDate) return 'text-gray-600';
+    
     const dueDate = new Date(assignment.dueDate);
+    if (isNaN(dueDate.getTime())) return 'text-gray-600';
+    
     const now = new Date();
     
     if (assignment.isSubmitted) {
@@ -128,6 +176,12 @@ const AssignmentList = () => {
   if (loading) {
     return <LoadingSpinner />;
   }
+
+  // ====== Қосымша қорғаныс ======
+  // Map-тен бұрын assignments массивін тексеру
+  const safeAssignments = Array.isArray(assignments) 
+    ? assignments.filter(assignment => assignment && assignment._id)
+    : [];
 
   return (
     <div className="space-y-6">
@@ -168,8 +222,8 @@ const AssignmentList = () => {
             >
               <option value="">All Courses</option>
               {courses.map((course) => (
-                <option key={course._id} value={course._id}>
-                  {course.title} ({course.courseCode})
+                <option key={course?._id || Math.random()} value={course?._id}>
+                  {course?.title || 'Unknown Course'} ({course?.courseCode || 'N/A'})
                 </option>
               ))}
             </select>
@@ -209,7 +263,7 @@ const AssignmentList = () => {
       </div>
 
       {/* Assignment List */}
-      {assignments.length === 0 ? (
+      {safeAssignments.length === 0 ? (
         <div className="text-center py-12">
           <DocumentTextIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No assignments found</h3>
@@ -222,14 +276,14 @@ const AssignmentList = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {assignments.map((assignment) => (
+          {safeAssignments.map((assignment) => (
             <div key={assignment._id} className="card hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
                     {getStatusIcon(assignment)}
                     <h3 className="text-lg font-semibold text-gray-900">
-                      {assignment.title}
+                      {assignment?.title || 'No Title'}
                     </h3>
                     <span className={`text-sm font-medium ${getStatusColor(assignment)}`}>
                       {getStatusText(assignment)}
@@ -237,26 +291,26 @@ const AssignmentList = () => {
                   </div>
 
                   <p className="text-gray-600 mb-3 line-clamp-2">
-                    {assignment.description}
+                    {assignment?.description || 'No description provided'}
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                     <div>
-                      <span className="font-medium">Course:</span> {assignment.course?.title}
+                      <span className="font-medium">Course:</span> {assignment.course?.title || 'N/A'}
                     </div>
                     <div>
-                      <span className="font-medium">Type:</span> {assignment.type}
+                      <span className="font-medium">Type:</span> {assignment?.type || 'N/A'}
                     </div>
                     <div>
-                      <span className="font-medium">Points:</span> {assignment.totalPoints}
+                      <span className="font-medium">Points:</span> {assignment?.totalPoints || 0}
                     </div>
                     <div>
-                      <span className="font-medium">Due:</span> {formatDueDate(assignment.dueDate)}
+                      <span className="font-medium">Due:</span> {formatDueDate(assignment?.dueDate)}
                     </div>
                     <div>
                       <span className="font-medium">Status:</span>{' '}
                       <span className={getStatusColor(assignment)}>
-                        {getDaysUntilDue(assignment.dueDate)}
+                        {getDaysUntilDue(assignment?.dueDate)}
                       </span>
                     </div>
                   </div>
