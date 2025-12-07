@@ -12,13 +12,38 @@ console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('PORT from .env:', process.env.PORT);
 console.log('MONGODB_URI exists:', !!process.env.MONGODB_URI);
 
-// Нақты CORS баптау
-app.use(cors({
-  origin: 'http://localhost:3000',
+// Production CORS баптаулары
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Рұқсат етілген домендер
+    const allowedOrigins = [
+      'http://localhost:3000',                    // Локальды дамыту
+      'https://teachi-f.onrender.com',            // Production фронтенд
+      'https://teachi-3.onrender.com',            // Production бэкенд
+    ];
+    
+    // Postman/Insomnia сияқты тест құралдары үшін
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log('✅ CORS рұқсаты берілді:', origin);
+      return callback(null, true);
+    } else {
+      console.log('🚫 CORS блокталды:', origin);
+      return callback(new Error('CORS рұқсаты жоқ'), false);
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400 // 24 сағат
+};
+
+app.use(cors(corsOptions));
+
+// Preflight сұрақтарын өңдеу
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
@@ -62,18 +87,34 @@ async function startServer() {
     app.use('/api/messages', require('./routes/messages'));
     app.use('/api/attendance', require('./routes/attendance'));
     
+    // Health check endpoint
+    app.get('/health', (req, res) => {
+      res.json({
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        environment: process.env.NODE_ENV
+      });
+    });
+    
     app.get('/', (req, res) => {
       res.send(`
-        <h1>🎓 TeachI</h1>
+        <h1>🎓 TeachI Backend API</h1>
         <p>Сервер жұмыс істеп тұр! Деректер тұрақты сақталады.</p>
         <p>Database: ${mongoose.connection.readyState === 1 ? 'Connected ✅' : 'Disconnected ❌'}</p>
+        <p>Environment: ${process.env.NODE_ENV || 'development'}</p>
+        <p>API Base URL: <code>/api</code></p>
+        <p>Health Check: <a href="/health">/health</a></p>
       `);
     });
     
     const PORT = process.env.PORT || 3001;
     app.listen(PORT, () => {
-      console.log(`\n🚀 Server running on http://localhost:${PORT}`);
-      console.log(`✅ CORS enabled for: http://localhost:3000`);
+      console.log(`\n🚀 Server running on port ${PORT}`);
+      console.log(`✅ CORS enabled for:`);
+      corsOptions.origin('http://localhost:3000', () => {});
+      corsOptions.origin('https://teachi-f.onrender.com', () => {});
+      corsOptions.origin('https://teachi-3.onrender.com', () => {});
       console.log(`📁 .env location: ${process.cwd()}\\.env`);
     });
     
