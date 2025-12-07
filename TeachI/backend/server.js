@@ -5,9 +5,9 @@ const mongoose = require('mongoose');
 
 const app = express();
 
-// Нақты CORS баптау
+// ✅ Түзетілген CORS баптау - production үшін
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: ['https://teachi-f.onrender.com', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -29,8 +29,8 @@ async function startServer() {
     app.use('/api/users', require('./routes/users'));
     app.use('/api/courses', require('./routes/courses'));
     app.use('/api/enrollments', require('./routes/enrollments'));
-    app.use('/api/assignments', require('./routes/assignments'));      // ✅ БУЛ ЖЕРГЕ
-    app.use('/api/notifications', require('./routes/notifications'));  // ✅ БУЛ ЖЕРГЕ
+    app.use('/api/assignments', require('./routes/assignments'));
+    app.use('/api/notifications', require('./routes/notifications'));
     app.use('/api/analytics', require('./routes/analytics'));
     app.use('/api/attendance', require('./routes/attendance'));
     app.use('/api/grades', require('./routes/grades'));
@@ -60,13 +60,13 @@ async function startServer() {
     const PORT = process.env.PORT || 3001;
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`✅ CORS enabled for: http://localhost:3000`);
+      console.log(`✅ CORS enabled for: https://teachi-f.onrender.com and http://localhost:3000`);
       console.log(`📁 Available routes:`);
       console.log(`   /api/auth`);
       console.log(`   /api/users`);
       console.log(`   /api/courses`);
-      console.log(`   /api/assignments`);      // ✅
-      console.log(`   /api/notifications`);    // ✅
+      console.log(`   /api/assignments`);
+      console.log(`   /api/notifications`);
       console.log(`   /api/enrollments`);
       console.log(`   /api/analytics`);
       console.log(`   /api/attendance`);
